@@ -1,0 +1,106 @@
+version: "3.3"
+
+services:
+  db:
+    restart: always
+    image: postgres
+    networks:
+      - testing_net
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    volumes:
+      - .postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=myproject
+      - POSTGRES_USER=myprojectuser
+      - POSTGRES_PASSWORD=password
+  chrome:
+    image: selenium/standalone-chrome
+    expose:
+      - "4444"
+    ports:
+      - "4444:4444"
+    networks:
+      - testing_net
+    volumes:
+      - /dev/shm:/dev/shm
+    privileged: "true"
+    shm_size: 2g
+  server:
+    restart: always
+    build: server/
+    # command: /bin/bash -c "python tests.py"
+    # command: bash -c "sleep infinity"
+    # command: ls
+    command: bash django-run.sh
+    volumes:
+      - "./server/goalserver:/usr/src/app/"
+      - "~/.aws:/root/.aws"
+    env_file:
+        - secrets.env
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    networks:
+      - testing_net
+    links:
+      - db:db
+      - chrome:chrome
+    depends_on:
+      - db
+      - chrome
+    environment:
+      - PGHOST=db
+      - PGDATABASE=myproject
+      - PGUSER=myprojectuser
+      - PGPASSWORD=password
+  # jenkinsci:
+  #   #command: #jenkins-plugin-cli --plugins "blueocean:1.25.2 docker-workflow:1.26"
+  #   build: jenkins/
+  #   privileged: "true"
+  #   expose:
+  #     - "8080"
+  #     - "50000"
+  #   ports:
+  #     - "8080:8080"
+  #     - "50000:50000"
+  #   networks:
+  #     - testing_net
+  #   depends_on:
+  #     - server
+  #   links:
+  #     - server:server
+  #   environment:
+  #     - DOCKER_HOST=tcp://docker:2376
+  #     - DOCKER_CERT_PATH=/certs/client
+  #     - DOCKER_TLS_VERIFY=1
+  #   volumes:
+  #     - .jenkins-data:/var/jenkins_home
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - .jenkins-docker-certs:/certs/client
+  proxy-server:
+    image: nginx:latest
+    volumes:
+      - ./nginx-frontman.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server
+    networks:
+      - testing_net
+    ports:
+      - "80:80"
+    expose:
+      - "80"
+
+volumes:
+  postgres_data:
+  # jenkins-data:
+  # jenkins-docker-certs:
+  # /var/run/docker.sock:
+
+
+networks:
+  testing_net:
+    driver: "bridge"

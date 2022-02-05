@@ -17,7 +17,6 @@ from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
-
 from django.contrib.messages import constants as messages
 from django.core.management.utils import get_random_secret_key
 

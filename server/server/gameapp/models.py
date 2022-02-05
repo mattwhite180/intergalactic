@@ -1,15 +1,15 @@
 import datetime
+import json
+from secrets import randbelow
 
 from django.contrib.auth.models import User
 from django.db import models
-from scipy.stats import binom
 from django.utils import timezone
-import json
 from django.utils.translation import gettext_lazy as _
-from secrets import randbelow
-
+from scipy.stats import binom
 
 MIN_DISTANCE_BETWEEN_PLANETS = 100
+
 
 def get_rand(min_value, max_value):
     max_value += 1
@@ -21,8 +21,10 @@ def get_rand(min_value, max_value):
         i += 1
     return random_list[randbelow(len(random_list))]
 
+
 def rand_item_from_list(l):
     return l[get_rand(0, len(l) - 1)]
+
 
 class Game(models.Model):
     title = models.CharField(max_length=50)
@@ -39,6 +41,7 @@ class Game(models.Model):
             self.game_dimentions - (self.game_dimentions % 10)
         if self.game_dimentions <= MIN_DISTANCE_BETWEEN_PLANETS * 10:
             self.game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 10
+
 
 class Player(models.Model):
     username = models.CharField(max_length=50)
@@ -58,6 +61,7 @@ class Player(models.Model):
     def get_id(self):
         return self.user.id
 
+
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -68,7 +72,6 @@ class Weapon(models.Model):
     owner = models.ForeignKey(Player, models.SET_NULL, blank=True, null=True)
     pos_x = models.IntegerField(default=40)
     pos_y = models.IntegerField(default=40)
-
 
     def __str__(self):
         return self.title
@@ -84,25 +87,19 @@ class WeaponBlueprint(models.Model):
     max_attack = models.IntegerField(default=20)
     min_health = models.IntegerField(default=1)
     max_health = models.IntegerField(default=20)
-    frequency = models.IntegerField() ## 1 - 99
+    frequency = models.IntegerField()  ## 1 - 99
 
     def __str__(self):
         return self.title + "(weapon blueprint)"
 
     def generate(self):
         w = Weapon.objects.create(
-            game = self.game,
-            title = self.title,
-            attack = self.attack,
-            attack_val = get_rand(
-                self.min_attack, self.max_attack
-            ),
-            health = get_rand(
-                self.min_attack, self.max_attack
-            ),
-            durability = get_rand(
-                self.min_durability, self.max_durability
-            )
+            game=self.game,
+            title=self.title,
+            attack=self.attack,
+            attack_val=get_rand(self.min_attack, self.max_attack),
+            health=get_rand(self.min_attack, self.max_attack),
+            durability=get_rand(self.min_durability, self.max_durability),
         )
         return w
 
@@ -136,10 +133,7 @@ class PlanetBlueprint(models.Model):
                 available_x.append(i)
             if p_list.filter(pos_y=i).count() == 0:
                 available_y.append(i)
-        return [
-            available_x,
-            available_y
-        ]
+        return [available_x, available_y]
 
     def get_valid_random_location(self):
         l = self.get_valid_locations()
@@ -155,9 +149,6 @@ class PlanetBlueprint(models.Model):
         if pos == False:
             pos = [0, 0]
         p = Planet.objects.create(
-            game = self.game,
-            title = self.title,
-            pos_x = pos[0],
-            pos_y = pos[1],
+            game=self.game, title=self.title, pos_x=pos[0], pos_y=pos[1]
         )
         return p

@@ -8,6 +8,9 @@ import json
 from django.utils.translation import gettext_lazy as _
 from secrets import randbelow
 
+
+MIN_DISTANCE_BETWEEN_PLANETS = 100
+
 def get_rand(min_value, max_value):
     max_value += 1
     random_list = list()
@@ -18,10 +21,12 @@ def get_rand(min_value, max_value):
         i += 1
     return random_list[randbelow(len(random_list))]
 
+def rand_item_from_list(l):
+    return l[get_rand(0, len(l) - 1)]
+
 class Game(models.Model):
     title = models.CharField(max_length=50)
-    game_map = TextField(max_length=None default="")
-    game_dimentions = models.IntegerField(default=200)
+    game_dimentions = models.IntegerField(default=20000)
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
@@ -29,13 +34,11 @@ class Game(models.Model):
     def __str__(self):
         return self.title
 
-    def get_map(x=0, y=0, distance=2):
-        map_size = (distance * 2) + 1
-
-    # have a grid of 'memorized' closest 3 planets
-
     def configure_game(self):
-
+        if self.game_dimentions % 10 != 0:
+            self.game_dimentions - (self.game_dimentions % 10)
+        if self.game_dimentions <= MIN_DISTANCE_BETWEEN_PLANETS * 10:
+            self.game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 10
 
 class Player(models.Model):
     username = models.CharField(max_length=50)
@@ -55,7 +58,6 @@ class Player(models.Model):
     def get_id(self):
         return self.user.id
 
-
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -64,6 +66,9 @@ class Weapon(models.Model):
     attack_val = models.IntegerField(default=1)
     health = models.IntegerField(default=1)
     owner = models.ForeignKey(Player, models.SET_NULL, blank=True, null=True)
+    pos_x = models.IntegerField(default=40)
+    pos_y = models.IntegerField(default=40)
+
 
     def __str__(self):
         return self.title
@@ -79,7 +84,7 @@ class WeaponBlueprint(models.Model):
     max_attack = models.IntegerField(default=20)
     min_health = models.IntegerField(default=1)
     max_health = models.IntegerField(default=20)
-    frequency = models.IntegerField(min_value=1, max_value=99)
+    frequency = models.IntegerField() ## 1 - 99
 
     def __str__(self):
         return self.title + "(weapon blueprint)"
@@ -88,7 +93,7 @@ class WeaponBlueprint(models.Model):
         w = Weapon.objects.create(
             game = self.game,
             title = self.title,
-            attack = self.attack
+            attack = self.attack,
             attack_val = get_rand(
                 self.min_attack, self.max_attack
             ),
@@ -99,15 +104,17 @@ class WeaponBlueprint(models.Model):
                 self.min_durability, self.max_durability
             )
         )
-        w.save()
+        return w
 
 
 class Planet(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
-    planet_map = TextField(max_length=None default="")
     pos_x = models.IntegerField(default=40)
     pos_y = models.IntegerField(default=40)
+
+    def get_distance(x, y):
+        return -1
 
 
 class PlanetBlueprint(models.Model):
@@ -116,3 +123,41 @@ class PlanetBlueprint(models.Model):
 
     def __str__(self):
         return self.title + "(planet blueprint)"
+
+    def get_valid_locations(self):
+        gd = self.game.game_dimentions
+        dim = gd - (gd % MIN_DISTANCE_BETWEEN_PLANETS)
+        available_x = list()
+        available_y = list()
+        p = Planet.objects.filter(game=self.game)
+        for i in range(MIN_DISTANCE_BETWEEN_PLANETS, dim, MIN_DISTANCE_BETWEEN_PLANETS):
+            p_list = Planet.objects.filter(game=self.game)
+            if p_list.filter(pos_x=i).count() == 0:
+                available_x.append(i)
+            if p_list.filter(pos_y=i).count() == 0:
+                available_y.append(i)
+        return [
+            available_x,
+            available_y
+        ]
+
+    def get_valid_random_location(self):
+        l = self.get_valid_locations()
+        if len(l[0]) == 0 or len(l[1]) == 0:
+            return False
+        else:
+            rand_x = rand_item_from_list(l[0])
+            rand_y = rand_item_from_list(l[1])
+            return [rand_x, rand_y]
+
+    def generate(self):
+        pos = self.get_valid_random_location()
+        if pos == False:
+            pos = [0, 0]
+        p = Planet.objects.create(
+            game = self.game,
+            title = self.title,
+            pos_x = pos[0],
+            pos_y = pos[1],
+        )
+        return p

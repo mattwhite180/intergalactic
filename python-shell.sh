@@ -5,4 +5,4 @@ echo from django.core import serializers
 echo import datetime
 echo import json
 echo '---------------------------'
-docker exec -it goalsandplans_server_1 python3 manage.py shell
+docker exec -it intergalactic_server_1 python3 manage.py shell

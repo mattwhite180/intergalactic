@@ -1,2 +1,2 @@
-cd ~/goalsandplans
+cd ~/intergalactic
 git pull

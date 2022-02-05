@@ -1,3 +1,20 @@
+djangosecret.txt
+.postgres_data
+.postgres_test
+
+migrations/
+!migrations/__init__.py
+
+*#*
+*.#*
+*~
+
+*.env.*
+*.env
+*.zip
+*.hide
+test.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

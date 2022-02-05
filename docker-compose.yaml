@@ -36,7 +36,7 @@ services:
     # command: ls
     command: bash django-run.sh
     volumes:
-      - "./server/goalserver:/usr/src/app/"
+      - "./server/server:/usr/src/app/"
       - "~/.aws:/root/.aws"
     env_file:
         - secrets.env

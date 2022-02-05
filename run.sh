@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ~/goalsandplans
+cd ~/intergalactic
 
 FILE=secrets.env
 

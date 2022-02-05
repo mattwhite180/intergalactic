@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from scipy.stats import binom
 from django.utils import timezone
+import json
 from django.utils.translation import gettext_lazy as _
 from secrets import randbelow
 
@@ -17,7 +18,7 @@ def get_rand(min_value, max_value):
         i += 1
     return random_list[randbelow(len(random_list))]
 
-def Game(models.Model):
+class Game(models.Model):
     title = models.CharField(max_length=50)
     game_map = TextField(max_length=None default="")
     game_dimentions = models.IntegerField(default=200)
@@ -28,11 +29,15 @@ def Game(models.Model):
     def __str__(self):
         return self.title
 
-    def configure(self):
-        # map (str --> str(list))
-        pass
+    def get_map(x=0, y=0, distance=2):
+        map_size = (distance * 2) + 1
 
-def Player(models.Model):
+    # have a grid of 'memorized' closest 3 planets
+
+    def configure_game(self):
+
+
+class Player(models.Model):
     username = models.CharField(max_length=50)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -41,6 +46,8 @@ def Player(models.Model):
     is_mod = models.BooleanField(default=True)
     health = models.IntegerField(default=200)
     stamina = models.IntegerField(default=40)
+    pos_x = models.IntegerField(default=40)
+    pos_y = models.IntegerField(default=40)
 
     def get_username(self):
         return self.user.username
@@ -49,7 +56,7 @@ def Player(models.Model):
         return self.user.id
 
 
-def Weapon(models.Model):
+class Weapon(models.Model):
     title = models.CharField(max_length=50)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     durability = models.IntegerField(default=1)
@@ -61,7 +68,8 @@ def Weapon(models.Model):
     def __str__(self):
         return self.title
 
-def WeaponBlueprint(models.Model):
+
+class WeaponBlueprint(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
     min_durability = models.IntegerField(default=1)
@@ -75,7 +83,6 @@ def WeaponBlueprint(models.Model):
 
     def __str__(self):
         return self.title + "(weapon blueprint)"
-
 
     def generate(self):
         w = Weapon.objects.create(
@@ -94,3 +101,18 @@ def WeaponBlueprint(models.Model):
         )
         w.save()
 
+
+class Planet(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    planet_map = TextField(max_length=None default="")
+    pos_x = models.IntegerField(default=40)
+    pos_y = models.IntegerField(default=40)
+
+
+class PlanetBlueprint(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.title + "(planet blueprint)"

@@ -7,6 +7,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from scipy.stats import binom
+import math
+
 
 MIN_DISTANCE_BETWEEN_PLANETS = 100
 
@@ -32,6 +34,7 @@ class Game(models.Model):
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
+    mod = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -42,25 +45,46 @@ class Game(models.Model):
         if self.game_dimentions <= MIN_DISTANCE_BETWEEN_PLANETS * 10:
             self.game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 10
 
+    def get_random_planet(self):
+        return rand_item_from_list(Planet.objects.filter(game=self))
+
+    def create_player(self, user):
+        home_planet = self.get_random_planet()
+        p = Player.objects.create(
+            username=user.username,
+            game = self,
+            bio=user.username + "'s bio",
+            pos_x=home_planet.pos_x,
+            pos_y=home_planet.pos_y
+        )
+        return p
 
 class Player(models.Model):
-    username = models.CharField(max_length=50)
+    username = models.CharField(max_length=50, default='player')
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    bio = models.CharField(max_length=300)
+    bio = models.CharField(max_length=300, default="enter bio here")
     last_login_date = models.DateField(auto_now=True)
-    is_mod = models.BooleanField(default=True)
+    is_mod = models.BooleanField(default=False)
     health = models.IntegerField(default=200)
     stamina = models.IntegerField(default=40)
-    pos_x = models.IntegerField(default=40)
-    pos_y = models.IntegerField(default=40)
+    pos_x = models.IntegerField(default=0)
+    pos_y = models.IntegerField(default=0)
 
-    def get_username(self):
+    def get_user_username(self):
         return self.user.username
 
-    def get_id(self):
+    def get_user_id(self):
         return self.user.id
 
+    def get_distance(self, obj):
+        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+            return math.sqrt(
+                (obj.pos_x - self.pos_x)**2 +
+                (obj.pos_y - self.pos_y)**2
+            )
+        else:
+            return -1
 
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
@@ -92,7 +116,7 @@ class WeaponBlueprint(models.Model):
     def __str__(self):
         return self.title + "(weapon blueprint)"
 
-    def generate(self):
+    def generate_weapon(self):
         w = Weapon.objects.create(
             game=self.game,
             title=self.title,
@@ -110,9 +134,14 @@ class Planet(models.Model):
     pos_x = models.IntegerField(default=40)
     pos_y = models.IntegerField(default=40)
 
-    def get_distance(x, y):
-        return -1
-
+    def get_distance(self, obj):
+        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+            return math.sqrt(
+                (obj.pos_x - self.pos_x)**2 +
+                (obj.pos_y - self.pos_y)**2
+            )
+        else:
+            return -1
 
 class PlanetBlueprint(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -126,9 +155,8 @@ class PlanetBlueprint(models.Model):
         dim = gd - (gd % MIN_DISTANCE_BETWEEN_PLANETS)
         available_x = list()
         available_y = list()
-        p = Planet.objects.filter(game=self.game)
+        p_list = Planet.objects.filter(game=self.game)
         for i in range(MIN_DISTANCE_BETWEEN_PLANETS, dim, MIN_DISTANCE_BETWEEN_PLANETS):
-            p_list = Planet.objects.filter(game=self.game)
             if p_list.filter(pos_x=i).count() == 0:
                 available_x.append(i)
             if p_list.filter(pos_y=i).count() == 0:
@@ -144,7 +172,7 @@ class PlanetBlueprint(models.Model):
             rand_y = rand_item_from_list(l[1])
             return [rand_x, rand_y]
 
-    def generate(self):
+    def generate_planet(self):
         pos = self.get_valid_random_location()
         if pos == False:
             pos = [0, 0]

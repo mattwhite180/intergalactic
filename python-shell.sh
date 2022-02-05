@@ -1,5 +1,15 @@
 echo from django.contrib.auth.models import AnonymousUser, User
-echo from planapp.models import Goal, Plan, Task, TodoList, UserData, Prize
+echo 'from gameapp.models import (
+    MIN_DISTANCE_BETWEEN_PLANETS,
+    Game,
+    Planet,
+    PlanetBlueprint,
+    Player,
+    Weapon,
+    WeaponBlueprint,
+    get_rand,
+    rand_item_from_list,
+)'
 echo from django.core.management.utils import get_random_secret_key
 echo from django.core import serializers
 echo import datetime

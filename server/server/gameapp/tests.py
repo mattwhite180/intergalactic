@@ -8,6 +8,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from django.contrib.auth.models import AnonymousUser, User
+
 from .models import (
     MIN_DISTANCE_BETWEEN_PLANETS,
     Game,
@@ -58,11 +60,12 @@ class GetRandItemFromListTestCase(TestCase):
             errmsg = "value " + str(rand_val) + " not in list: " + str(l)
             self.assertEqual(val, expected, errmsg)
 
-
 class GameTestCase(TestCase):
     def setUp(self):
+        test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=4, description="test!"
+            title="testgame", game_dimentions=4, description="test!",
+            mod=test_user,
         )
         g.save()
 
@@ -84,8 +87,10 @@ class GameTestCase(TestCase):
 
 class PlanetBlueprintTestCase(TestCase):
     def setUp(self):
+        test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=1000, description="test!"
+            title="testgame", game_dimentions=1000, description="test!",
+            mod=test_user,
         )
         g.save()
         p = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
@@ -100,7 +105,7 @@ class PlanetBlueprintTestCase(TestCase):
 
     def test_generate(self):
         p = PlanetBlueprint.objects.get(title="testplanetbp")
-        new_planet = p.generate()
+        new_planet = p.generate_planet()
         new_planet.save()
         expected = "testplanetbp"
         val = new_planet.title
@@ -109,7 +114,7 @@ class PlanetBlueprintTestCase(TestCase):
 
     def test_valid_locations(self):
         p = PlanetBlueprint.objects.get(title="testplanetbp")
-        new_planet = p.generate()
+        new_planet = p.generate_planet()
         new_planet.pos_x = 300
         new_planet.pos_y = 900
         new_planet.save()
@@ -124,6 +129,70 @@ class PlanetBlueprintTestCase(TestCase):
         expected_y = [100, 200, 300, 400, 500, 600, 700, 800]
         errmsg_y = "expected " + str(expected_y) + " but got " + str(y_list)
         self.assertEqual(y_list, expected_y, errmsg_y)
+
+
+class PlanetTestCase(TestCase):
+    def setUp(self):
+        test_user = User.objects.create_user(username="testuser", password="1234")
+        g = Game.objects.create(
+            title="testgame", game_dimentions=4, description="test!",
+            mod=test_user,
+        )
+        g.save()
+        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
+        pb.save()
+        p1 = pb.generate_planet()
+        p1.title = "testplanet1"
+        p1.pos_x = 100
+        p1.pos_y = 100
+        p1.save()
+        p2 = pb.generate_planet()
+        p2.title = "testplanet2"
+        p2.pos_x = 500
+        p2.pos_y = 400
+        p2.save()
+
+    def test_sanity(self):
+        p = Planet.objects.get(title="testplanet1")
+        expected = "testplanet1"
+        val = p.title
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_valid_locations(self):
+        p1 = Planet.objects.get(title="testplanet1")
+        p2 = Planet.objects.get(title="testplanet2")
+        val = p1.get_distance(p2)
+        expected = 500
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        val = p2.get_distance(p1)
+        expected = 500
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+class PlayerTestCase(TestCase):
+    def setUp(self):
+        test_user = User.objects.create_user(username="testuser", password="1234")
+        g = Game.objects.create(
+            title="testgame", game_dimentions=4, description="test!",
+            mod=test_user,
+        )
+        g.configure_game()
+        g.save()
+        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
+        pb.save()
+        for p in range(6):
+            pl = pb.generate_planet()
+            pl.title = 'planet #' + str(p)
+            pl.save()
+
+    def test_sanity(self):
+        p = Planet.objects.get(title="planet #4")
+        expected = "planet #4"
+        val = p.title
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
 
 
 # class RemoteGoogleTestCase(unittest.TestCase):

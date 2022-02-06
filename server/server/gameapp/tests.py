@@ -268,6 +268,23 @@ class PlayerTestCase(TestCase):
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
+    def test_move_forward(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        p = g.create_player(u)
+        p.set_position(1000, 1000)
+        p.save()
+        p.set_direction(0)
+        p.move()
+        pos = p.get_position()
+        expected = 1000 + 10
+        val = pos[0]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        expected = 1000 + 0
+        val = pos[1]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
 
 
 # class RemoteGoogleTestCase(unittest.TestCase):

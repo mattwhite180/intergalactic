@@ -10,8 +10,8 @@ from scipy.stats import binom
 import math
 
 
-MIN_DISTANCE_BETWEEN_PLANETS = 1000
-
+MIN_DISTANCE_BETWEEN_PLANETS = 10000
+DEFAULT_SPEED = 10
 
 def get_rand(min_value, max_value):
     max_value += 1
@@ -30,7 +30,7 @@ def rand_item_from_list(l):
 
 class Game(models.Model):
     title = models.CharField(max_length=50)
-    game_dimentions = models.IntegerField(default=1000 * 10)
+    game_dimentions = models.IntegerField(default=10000 * 10)
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
@@ -102,15 +102,28 @@ class Player(models.Model):
             d = d % 360
         self.direction = d
     
+    def set_position(self, x, y):
+        self.pos_x = x
+        self.pos_y = y
+    
+    def get_position(self):
+        return [self.pos_x, self.pos_y]
+
     def move(self):
-        speed = 1
+        speed = DEFAULT_SPEED
         if Vehicle.objects.filter(owner=self).count() == 1:
             v = Vehicle.objects.get(owner=self)
+            speed = v.speed
+        direction_radients = math.pi * self.direction / 180
+        change_x = int(speed * math.cos(direction_radients))
+        change_y = int(speed * math.sin(direction_radients))
+        self.pos_x += change_x
+        self.pos_y += change_y
+        if self.pos_x > self.game.game_dimentions:
+            self.pos_x = self.pos_x % self.game.game_dimentions
+        if self.pos_y > self.game.game_dimentions:
+            self.pos_y = self.pos_y % self.game.game_dimentions
 
-    def go(self, speed, direction):
-        direction = math.pi * direction / 180
-        print("x:", int(speed * math.cos(direction)))
-        print("y:", int(speed * math.sin(direction)))
 
 class Weapon(models.Model):
     title = models.CharField(max_length=50)

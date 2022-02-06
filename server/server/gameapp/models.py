@@ -34,7 +34,7 @@ class Game(models.Model):
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
-    mod = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title

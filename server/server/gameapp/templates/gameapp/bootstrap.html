@@ -1,0 +1,108 @@
+{% extends "gameapp/security.html" %}
+
+{% block website %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'gameapp/style.css' %}">
+  <script src="https://www.w3schools.com/lib/w3.js"></script>
+  <title>Intergalactic</title>
+</head>
+
+<body>
+  {% include "gameapp/env_vars.html" %}
+  {% if is_mobile %}
+  {% else %}
+    {% include "gameapp/sidebar.html" %}
+  {% endif %}
+  {% if debug %}
+    <div id="debug" class="alert alert-success alert-dismissible fade show" role="alert">
+      <strong>DEBUG IS ENABLED. USING LOCAL DATABASE</strong>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  {% endif %}
+  {% block error %}
+    {% if error_list %}
+    <div id=errorblock>
+      {% for e in error_list %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <strong>{{ e }}</strong>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endblock %}
+  {% block message %}
+    {% if messages %}
+      <ul id="messages" class="messages">
+        {% for message in messages %}
+          <div class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endblock %}
+  {% if user.is_authenticated %}
+
+  {% endif %}
+  <div id="content" class="float-container">
+    {% block content %}{% endblock %}
+    <div {% if not is_mobile %} class="float-child" {% endif %}>
+      {% block leftcontent %}{% endblock %}
+    </div>
+    <div {% if not is_mobile %} class="float-child" {% endif %}>
+      {% block rightcontent %}{% endblock %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"></script>
+    <script>
+      function copyToClipboard(elementId) {
+
+        // Create a "hidden" input
+        var aux = document.createElement("input");
+
+        // Assign it the value of the specified element
+        aux.setAttribute("value", document.getElementById(elementId).innerHTML);
+
+        // Append it to the body
+        document.body.appendChild(aux);
+
+        // Highlight its content
+        aux.select();
+
+        // Copy the highlighted text
+        document.execCommand("copy");
+
+        // Remove it from the body
+        document.body.removeChild(aux);
+
+      }
+    </script>
+</body>
+
+</html>
+
+{% endblock %}

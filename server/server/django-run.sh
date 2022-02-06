@@ -9,7 +9,7 @@
 # echo 'sleeping for 5'
 # sleep 5
 # echo 'done sleeping. running migrations'
-# python3 manage.py makemigrations planapp && \
+# python3 manage.py makemigrations gameapp && \
 # python3 manage.py makemigrations
 # python3 manage.py makemigrations && \
 # python3 manage.py migrate && \

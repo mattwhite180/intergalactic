@@ -12,6 +12,10 @@ import math
 
 MIN_DISTANCE_BETWEEN_PLANETS = 10000
 DEFAULT_SPEED = 10
+ALPHABET = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+]
 
 def get_rand(min_value, max_value):
     max_value += 1
@@ -117,7 +121,6 @@ class Player(models.Model):
                 my_list.append(p.id)
         return my_list
 
-
     def move(self):
         speed = DEFAULT_SPEED
         if Vehicle.objects.filter(owner=self).count() == 1:
@@ -133,7 +136,7 @@ class Player(models.Model):
             self.pos_x = self.pos_x % self.game.game_dimentions
         if self.pos_y > self.game.game_dimentions:
             self.pos_y = self.pos_y % self.game.game_dimentions
-
+        return [change_x, change_y]
 
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
@@ -286,7 +289,10 @@ class PlanetBlueprint(models.Model):
         if pos == False:
             pos = [-1, -1]
         p = Planet.objects.create(
-            game=self.game, title=self.title, pos_x=pos[0], pos_y=pos[1]
+            game=self.game,
+            title=self.title + " " + rand_item_from_list(ALPHABET) + str(get_rand(1, 100)),
+            pos_x=pos[0],
+            pos_y=pos[1]
         )
         return p
 

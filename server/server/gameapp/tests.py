@@ -67,7 +67,7 @@ class GameTestCase(TestCase):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
             title="testgame", game_dimentions=4, description="test!",
-            mod=test_user,
+            owner=test_user,
         )
         g.save()
 
@@ -92,7 +92,7 @@ class PlanetBlueprintTestCase(TestCase):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
             title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 10, description="test!",
-            mod=test_user,
+            owner=test_user,
         )
         g.save()
         p = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
@@ -110,7 +110,7 @@ class PlanetBlueprintTestCase(TestCase):
         new_planet = p.generate_planet()
         new_planet.save()
         expected = "testplanetbp"
-        val = new_planet.title
+        val = new_planet.title[:12]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
@@ -144,7 +144,7 @@ class PlanetTestCase(TestCase):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
             title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 100, description="test!",
-            mod=test_user,
+            owner=test_user,
         )
         g.save()
         pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
@@ -184,7 +184,7 @@ class PlayerTestCase(TestCase):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
             title="testgame", game_dimentions=4, description="test!",
-            mod=test_user,
+            owner=test_user,
         )
         g.configure_game()
         g.save()

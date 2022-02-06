@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from snippets.models import Game
+from gameapp.models import Game
 
 class GameSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Snippet
+        model = Game
         fields = [
             'title',
             'description',

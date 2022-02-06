@@ -101,13 +101,22 @@ class Player(models.Model):
         if d >= 360:
             d = d % 360
         self.direction = d
-    
+
     def set_position(self, x, y):
         self.pos_x = x
         self.pos_y = y
     
     def get_position(self):
         return [self.pos_x, self.pos_y]
+
+    def get_closest_planets(self, n):
+        range_distance = MIN_DISTANCE_BETWEEN_PLANETS * 2
+        my_list = list()
+        for p in Planet.objects.filter(game=self.game):
+            if self.get_distance(p) <= range_distance:
+                my_list.append(p.id)
+        return my_list
+
 
     def move(self):
         speed = DEFAULT_SPEED
@@ -226,6 +235,13 @@ class Planet(models.Model):
     pos_x = models.IntegerField(default=40)
     pos_y = models.IntegerField(default=40)
 
+    def __str__(self):
+        return self.title
+
+    def set_position(self, x, y):
+        self.pos_x = x
+        self.pos_y = y
+
     def get_distance(self, obj):
         if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
             return math.sqrt(
@@ -267,7 +283,7 @@ class PlanetBlueprint(models.Model):
     def generate_planet(self):
         pos = self.get_valid_random_location()
         if pos == False:
-            pos = [0, 0]
+            pos = [-1, -1]
         p = Planet.objects.create(
             game=self.game, title=self.title, pos_x=pos[0], pos_y=pos[1]
         )

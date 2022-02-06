@@ -143,7 +143,7 @@ class PlanetTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=4, description="test!",
+            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 100, description="test!",
             mod=test_user,
         )
         g.save()
@@ -286,6 +286,45 @@ class PlayerTestCase(TestCase):
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
+    def test_n_closest_planets(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        player = g.create_player(u)
+        pb = PlanetBlueprint.objects.get(title="testplanetbp")
+        mindist = MIN_DISTANCE_BETWEEN_PLANETS
+        player.set_position(mindist, mindist)
+        player.save()
+        for i in Planet.objects.filter(game = g):
+            i.delete()
+        for i in range(mindist * 2, mindist * 6, mindist):
+            name = 'A' + str(int((i - mindist) / mindist))
+            planet = pb.generate_planet()
+            planet.title = name
+            planet.set_position(mindist, i)
+            planet.save()
+        for i in range(mindist * 2, mindist * 6, mindist):
+            name = 'B' + str(int((i - mindist) / mindist))
+            planet = pb.generate_planet()
+            planet.title = name
+            planet.set_position(i, mindist)
+            planet.save()
+        for i in range(mindist * 2, mindist * 6, mindist):
+            name = 'C' + str(int((i - mindist) / mindist))
+            planet = pb.generate_planet()
+            planet.title = name
+            planet.set_position(i, i)
+            planet.save()
+        planet_list = player.get_closest_planets(3)
+        name_list = list()
+        for p in planet_list:
+            planet = Planet.objects.get(id=p)
+            name_list.append(planet.title)
+        name_list.sort()
+        expected = ['A1', 'A2', 'B1', 'B2', 'C1']
+        val = name_list
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        
 
 # class RemoteGoogleTestCase(unittest.TestCase):
 #     #check if selenium is working

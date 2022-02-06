@@ -10,7 +10,7 @@ from scipy.stats import binom
 import math
 
 
-MIN_DISTANCE_BETWEEN_PLANETS = 100
+MIN_DISTANCE_BETWEEN_PLANETS = 1000
 
 
 def get_rand(min_value, max_value):
@@ -30,7 +30,7 @@ def rand_item_from_list(l):
 
 class Game(models.Model):
     title = models.CharField(max_length=50)
-    game_dimentions = models.IntegerField(default=20000)
+    game_dimentions = models.IntegerField(default=1000 * 10)
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
@@ -46,11 +46,17 @@ class Game(models.Model):
             self.game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 10
 
     def get_random_planet(self):
-        return rand_item_from_list(Planet.objects.filter(game=self))
+        if Planet.objects.filter(game=self).count() == 0:
+            return False
+        else:
+            return rand_item_from_list(Planet.objects.filter(game=self))
 
     def create_player(self, user):
         home_planet = self.get_random_planet()
+        if home_planet == False:
+            return False
         p = Player.objects.create(
+            user=user,
             username=user.username,
             game = self,
             bio=user.username + "'s bio",
@@ -67,9 +73,9 @@ class Player(models.Model):
     last_login_date = models.DateField(auto_now=True)
     is_mod = models.BooleanField(default=False)
     health = models.IntegerField(default=200)
-    stamina = models.IntegerField(default=40)
     pos_x = models.IntegerField(default=0)
     pos_y = models.IntegerField(default=0)
+    direction = models.IntegerField(default=0)
 
     def get_user_username(self):
         return self.user.username
@@ -85,6 +91,26 @@ class Player(models.Model):
             )
         else:
             return -1
+
+    def get_direction(self):
+        return self.direction
+    
+    def set_direction(self, d):
+        while d < 0:
+            d += 360
+        if d >= 360:
+            d = d % 360
+        self.direction = d
+    
+    def move(self):
+        speed = 1
+        if Vehicle.objects.filter(owner=self).count() == 1:
+            v = Vehicle.objects.get(owner=self)
+
+    def go(self, speed, direction):
+        direction = math.pi * direction / 180
+        print("x:", int(speed * math.cos(direction)))
+        print("y:", int(speed * math.sin(direction)))
 
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
@@ -126,6 +152,59 @@ class WeaponBlueprint(models.Model):
             durability=get_rand(self.min_durability, self.max_durability),
         )
         return w
+
+
+class Vehicle(models.Model):
+    title = models.CharField(max_length=50)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    durability = models.IntegerField(default=1)
+    attack = models.BooleanField(default=False)
+    attack_val = models.IntegerField(default=1)
+    health = models.IntegerField(default=1)
+    owner = models.ForeignKey(Player, models.SET_NULL, blank=True, null=True)
+    pos_x = models.IntegerField(default=40)
+    pos_y = models.IntegerField(default=40)
+    speed = models.IntegerField(default=40)
+    autopilot_y = models.IntegerField(default=-1)
+    autopilot_x = models.IntegerField(default=-1)
+
+    def __str__(self):
+        return self.title
+
+    def get_distance(self, obj):
+        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+            return math.sqrt(
+                (obj.pos_x - self.pos_x)**2 +
+                (obj.pos_y - self.pos_y)**2
+            )
+        else:
+            return -1
+
+class VehicleBlueprint(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    min_durability = models.IntegerField(default=1)
+    max_durability = models.IntegerField(default=9)
+    attack = models.BooleanField(default=False)
+    min_attack = models.IntegerField(default=1)
+    max_attack = models.IntegerField(default=20)
+    min_health = models.IntegerField(default=1)
+    max_health = models.IntegerField(default=20)
+
+    def __str__(self):
+        return self.title + "(vehicle blueprint)"
+
+    def generate_vehicle(self, owner):
+        v = Vehicle.objects.create(
+            owner=owner,
+            game=self.game,
+            title=self.title,
+            attack=self.attack,
+            attack_val=get_rand(self.min_attack, self.max_attack),
+            health=get_rand(self.min_attack, self.max_attack),
+            durability=get_rand(self.min_durability, self.max_durability),
+        )
+        return v
 
 
 class Planet(models.Model):
@@ -180,3 +259,4 @@ class PlanetBlueprint(models.Model):
             game=self.game, title=self.title, pos_x=pos[0], pos_y=pos[1]
         )
         return p
+

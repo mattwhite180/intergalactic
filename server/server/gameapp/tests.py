@@ -20,6 +20,8 @@ from .models import (
     WeaponBlueprint,
     get_rand,
     rand_item_from_list,
+    VehicleBlueprint,
+    Vehicle,
 )
 
 # from .views import data_to_json, run_jobs
@@ -89,7 +91,7 @@ class PlanetBlueprintTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=1000, description="test!",
+            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 10, description="test!",
             mod=test_user,
         )
         g.save()
@@ -115,19 +117,25 @@ class PlanetBlueprintTestCase(TestCase):
     def test_valid_locations(self):
         p = PlanetBlueprint.objects.get(title="testplanetbp")
         new_planet = p.generate_planet()
-        new_planet.pos_x = 300
-        new_planet.pos_y = 900
+        new_planet.pos_x = 3 * MIN_DISTANCE_BETWEEN_PLANETS
+        new_planet.pos_y = 9 * MIN_DISTANCE_BETWEEN_PLANETS
         new_planet.save()
         available_list = p.get_valid_locations()
         x_list = available_list[0]
         y_list = available_list[1]
         x_list.sort()
         y_list.sort()
-        expected_x = [100, 200, 400, 500, 600, 700, 800, 900]
-        errmsg_x = "expected " + str(expected_x) + " but got " + str(x_list)
+        my_list = [1, 2, 4, 5, 6, 7, 8, 9]
+        expected_x = list()
+        for i in my_list:
+            expected_x.append(i * MIN_DISTANCE_BETWEEN_PLANETS)
+        errmsg_x = "x_list should have " + str(expected_x) + " but got " + str(x_list)
         self.assertEqual(x_list, expected_x, errmsg_x)
-        expected_y = [100, 200, 300, 400, 500, 600, 700, 800]
-        errmsg_y = "expected " + str(expected_y) + " but got " + str(y_list)
+        my_list = [1, 2, 3, 4, 5, 6, 7, 8]
+        expected_y = list()
+        for i in my_list:
+            expected_y.append(i * MIN_DISTANCE_BETWEEN_PLANETS)
+        errmsg_y = "y_list should have " + str(expected_y) + " but got " + str(y_list)
         self.assertEqual(y_list, expected_y, errmsg_y)
 
 
@@ -187,12 +195,79 @@ class PlayerTestCase(TestCase):
             pl.title = 'planet #' + str(p)
             pl.save()
 
-    def test_sanity(self):
+    def test_sanity_check(self):
         p = Planet.objects.get(title="planet #4")
         expected = "planet #4"
         val = p.title
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
+
+    def test_create_player(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        p = g.create_player(u)
+        p.save()
+        expected = "testuser's bio"
+        val = p.bio
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_player_location(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        for i in Planet.objects.filter(game=g):
+            i.delete()
+        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
+        pb.save()
+        planet = pb.generate_planet()
+        player = g.create_player(u)
+        self.assertNotEquals(player, False, "there is an issue with creating a player")
+        player.save()
+        expected = planet.pos_x
+        val = player.pos_x
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        expected = planet.pos_y
+        val = player.pos_y
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_create_player_no_planets(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        for i in Planet.objects.filter(game=g):
+            i.delete()
+        player = g.create_player(u)
+        expected = False
+        val = player
+        errmsg = "expected 'player' to be false since no planets exist on this game"
+        self.assertEqual(val, expected, errmsg)
+
+    def test_set_direction(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        player = g.create_player(u)
+        player.set_direction(4)
+        expected = 4
+        val = player.get_direction()
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        player.set_direction(365)
+        expected = 5
+        val = player.get_direction()
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        player.set_direction(-10)
+        expected = 350
+        val = player.get_direction()
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        player.set_direction(-360 - 360 -90)
+        expected = 270
+        val = player.get_direction()
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
 
 
 # class RemoteGoogleTestCase(unittest.TestCase):

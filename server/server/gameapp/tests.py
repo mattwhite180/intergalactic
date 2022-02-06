@@ -268,13 +268,67 @@ class PlayerTestCase(TestCase):
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
-    def test_move_forward(self):
+    def test_move_up(self):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
         p.set_position(1000, 1000)
         p.save()
         p.set_direction(0)
+        p.move()
+        pos = p.get_position()
+        expected = 1000 + 0
+        val = pos[0]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        expected = 1000 + 10
+        val = pos[1]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_move_left(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        p = g.create_player(u)
+        p.set_position(1000, 1000)
+        p.save()
+        p.set_direction(90)
+        p.move()
+        pos = p.get_position()
+        expected = 1000 - 10
+        val = pos[0]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        expected = 1000 + 0
+        val = pos[1]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_move_down(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        p = g.create_player(u)
+        p.set_position(1000, 1000)
+        p.save()
+        p.set_direction(180)
+        p.move()
+        pos = p.get_position()
+        expected = 1000 + 0
+        val = pos[0]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+        expected = 1000 + -10
+        val = pos[1]
+        errmsg = "expected " + str(expected) + " but got " + str(val)
+        self.assertEqual(val, expected, errmsg)
+
+    def test_move_right(self):
+        g = Game.objects.get(title="testgame")
+        u = User.objects.get(username='testuser')
+        p = g.create_player(u)
+        p.set_position(1000, 1000)
+        p.save()
+        p.set_direction(270)
         p.move()
         pos = p.get_position()
         expected = 1000 + 10
@@ -285,6 +339,7 @@ class PlayerTestCase(TestCase):
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
+
 
     def test_n_closest_planets(self):
         g = Game.objects.get(title="testgame")

@@ -123,7 +123,8 @@ class Player(models.Model):
         if Vehicle.objects.filter(owner=self).count() == 1:
             v = Vehicle.objects.get(owner=self)
             speed = v.speed
-        direction_radients = math.pi * self.direction / 180
+        d = self.direction + 90 # 0' is up, 90 is left...
+        direction_radients = math.pi * d / 180
         change_x = int(speed * math.cos(direction_radients))
         change_y = int(speed * math.sin(direction_radients))
         self.pos_x += change_x

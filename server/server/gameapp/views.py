@@ -4,7 +4,6 @@ from django.shortcuts import render
 import re
 
 from .models import (
-    MIN_DISTANCE_BETWEEN_PLANETS,
     Game,
     Planet,
     PlanetBlueprint,

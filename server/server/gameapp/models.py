@@ -10,7 +10,6 @@ from scipy.stats import binom
 import math
 
 
-MIN_DISTANCE_BETWEEN_PLANETS = 10000
 DEFAULT_SPEED = 10
 ALPHABET = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
@@ -39,6 +38,7 @@ class Game(models.Model):
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    min_distance_between_planets = models.IntegerField(default=10000)
 
     def __str__(self):
         return self.title
@@ -46,8 +46,8 @@ class Game(models.Model):
     def configure_game(self):
         if self.game_dimentions % 10 != 0:
             self.game_dimentions - (self.game_dimentions % 10)
-        if self.game_dimentions <= MIN_DISTANCE_BETWEEN_PLANETS * 10:
-            self.game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 10
+        if self.game_dimentions <= self.min_distance_between_planets * 10:
+            self.game_dimentions = self.min_distance_between_planets * 10
 
     def get_random_planet(self):
         if Planet.objects.filter(game=self).count() == 0:
@@ -114,7 +114,7 @@ class Player(models.Model):
         return [self.pos_x, self.pos_y]
 
     def get_closest_planets(self, n):
-        range_distance = MIN_DISTANCE_BETWEEN_PLANETS * 2
+        range_distance = self.game.min_distance_between_planets * 2
         my_list = list()
         for p in Planet.objects.filter(game=self.game):
             if self.get_distance(p) <= range_distance:
@@ -264,11 +264,11 @@ class PlanetBlueprint(models.Model):
 
     def get_valid_locations(self):
         gd = self.game.game_dimentions
-        dim = gd - (gd % MIN_DISTANCE_BETWEEN_PLANETS)
+        dim = gd - (gd % self.game.min_distance_between_planets)
         available_x = list()
         available_y = list()
         p_list = Planet.objects.filter(game=self.game)
-        for i in range(MIN_DISTANCE_BETWEEN_PLANETS, dim, MIN_DISTANCE_BETWEEN_PLANETS):
+        for i in range(self.game.min_distance_between_planets, dim, MIN_DISTANCE_BETWEEN_PLANETS):
             if p_list.filter(pos_x=i).count() == 0:
                 available_x.append(i)
             if p_list.filter(pos_y=i).count() == 0:

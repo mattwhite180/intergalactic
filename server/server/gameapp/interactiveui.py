@@ -4,7 +4,6 @@ import datetime
 import json
 from django.contrib.auth.models import AnonymousUser, User
 from gameapp.models import (
-    MIN_DISTANCE_BETWEEN_PLANETS,
     Game,
     Planet,
     PlanetBlueprint,
@@ -79,7 +78,7 @@ def run_game():
 
     val = get_input(main_choice_list)
     while val != 'Q':
-        print()x
+        print()
         if val == 'M':
             result = p.move()
             print("distance moved: ", result)

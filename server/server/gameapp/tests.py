@@ -11,7 +11,6 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from django.contrib.auth.models import AnonymousUser, User
 
 from .models import (
-    MIN_DISTANCE_BETWEEN_PLANETS,
     Game,
     Planet,
     PlanetBlueprint,
@@ -91,7 +90,7 @@ class PlanetBlueprintTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 10, description="test!",
+            title="testgame", game_dimentions=g.min_distance_between_planets * 10, description="test!",
             owner=test_user,
         )
         g.save()
@@ -117,8 +116,8 @@ class PlanetBlueprintTestCase(TestCase):
     def test_valid_locations(self):
         p = PlanetBlueprint.objects.get(title="testplanetbp")
         new_planet = p.generate_planet()
-        new_planet.pos_x = 3 * MIN_DISTANCE_BETWEEN_PLANETS
-        new_planet.pos_y = 9 * MIN_DISTANCE_BETWEEN_PLANETS
+        new_planet.pos_x = 3 * g.min_distance_between_planets
+        new_planet.pos_y = 9 * g.min_distance_between_planets
         new_planet.save()
         available_list = p.get_valid_locations()
         x_list = available_list[0]
@@ -128,13 +127,13 @@ class PlanetBlueprintTestCase(TestCase):
         my_list = [1, 2, 4, 5, 6, 7, 8, 9]
         expected_x = list()
         for i in my_list:
-            expected_x.append(i * MIN_DISTANCE_BETWEEN_PLANETS)
+            expected_x.append(i * g.min_distance_between_planets)
         errmsg_x = "x_list should have " + str(expected_x) + " but got " + str(x_list)
         self.assertEqual(x_list, expected_x, errmsg_x)
         my_list = [1, 2, 3, 4, 5, 6, 7, 8]
         expected_y = list()
         for i in my_list:
-            expected_y.append(i * MIN_DISTANCE_BETWEEN_PLANETS)
+            expected_y.append(i * g.min_distance_between_planets)
         errmsg_y = "y_list should have " + str(expected_y) + " but got " + str(y_list)
         self.assertEqual(y_list, expected_y, errmsg_y)
 
@@ -143,7 +142,7 @@ class PlanetTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 100, description="test!",
+            title="testgame", game_dimentions=g.min_distance_between_planets * 100, description="test!",
             owner=test_user,
         )
         g.save()
@@ -383,7 +382,7 @@ class PlayerTestCase(TestCase):
         u = User.objects.get(username='testuser')
         player = g.create_player(u)
         pb = PlanetBlueprint.objects.get(title="testplanetbp")
-        mindist = MIN_DISTANCE_BETWEEN_PLANETS
+        mindist = g.min_distance_between_planets
         player.set_position(mindist, mindist)
         player.save()
         for i in Planet.objects.filter(game = g):

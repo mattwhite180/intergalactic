@@ -1,6 +1,5 @@
 echo from django.contrib.auth.models import AnonymousUser, User
 echo 'from gameapp.models import (
-    MIN_DISTANCE_BETWEEN_PLANETS,
     Game,
     Planet,
     PlanetBlueprint,

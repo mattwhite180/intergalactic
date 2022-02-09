@@ -1,21 +1,11 @@
+import re
+
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render
 
-import re
-
-from .models import (
-    Game,
-    Planet,
-    Player,
-    Weapon,
-    WeaponBlueprint,
-    get_rand,
-    rand_item_from_list,
-    VehicleBlueprint,
-    Vehicle,
-)
-
-from django.conf import settings
+from .models import (Game, Planet, Player, Vehicle, VehicleBlueprint, Weapon,
+                     WeaponBlueprint, get_rand, rand_item_from_list)
 
 
 """
@@ -23,8 +13,10 @@ from django.conf import settings
 Helpful functions used by views
 """
 
+
 def testview(request):
     return HttpResponse("hello world! you are at the Intergalactic testview!")
+
 
 def debug():
     return settings.DEBUG
@@ -37,6 +29,7 @@ def mobile(request):
         return True
     else:
         return False
+
 
 def get_context(request):
     context = {}
@@ -53,9 +46,11 @@ def get_context(request):
 non-model views
 """
 
+
 def index(request):
     context = get_context(request)
     return render(request, "gameapp/bootstrap.html", context)
+
 
 def sidebar(request):
     context = get_context(request)

@@ -1,14 +1,11 @@
-from rest_framework import serializers
 from gameapp.models import Game
+from rest_framework import serializers
+
 
 class GameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = [
-            'title',
-            'description',
-            'game_dimentions',
-        ]
+        fields = ["title", "description", "game_dimentions"]
 
     def create(self, validated_data):
         """

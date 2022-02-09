@@ -20,6 +20,7 @@ from rest_framework.reverse import reverse
 def api_root(request, format=None):
     return Response({"games": reverse("game-list", request=request, format=format)})
 
+
 class GameViewSet(viewsets.ModelViewSet):
     """
     This is the RESTful API for Chessdynamics

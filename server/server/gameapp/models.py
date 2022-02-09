@@ -1,5 +1,7 @@
 import datetime
 import json
+import math
+from collections import namedtuple
 from secrets import randbelow
 
 from django.contrib.auth.models import User
@@ -7,16 +9,39 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from scipy.stats import binom
-from collections import namedtuple
-import math
 
 Point = namedtuple("Point", "x y")
 
 DEFAULT_SPEED = 10
 ALPHABET = [
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
 ]
+
 
 def get_rand(min_value, max_value):
     max_value += 1
@@ -52,8 +77,14 @@ class Game(models.Model):
         dim = gd - (gd % self.min_distance_between_planets)
         available_list = list()
         p_list = Planet.objects.filter(game=self)
-        for x in range(self.min_distance_between_planets, dim, self.min_distance_between_planets):
-            for y in range(self.min_distance_between_planets, dim, self.min_distance_between_planets):
+        for x in range(
+            self.min_distance_between_planets, dim, self.min_distance_between_planets
+        ):
+            for y in range(
+                self.min_distance_between_planets,
+                dim,
+                self.min_distance_between_planets,
+            ):
                 if p_list.filter(pos_x=x).filter(pos_y=y).count() == 0:
                     available_list.append(Point(x, y))
         return available_list
@@ -76,9 +107,12 @@ class Game(models.Model):
                 pos = Point(-1, -1)
             p = Planet.objects.create(
                 game=self,
-                title=self.title + " " + rand_item_from_list(ALPHABET) + str(get_rand(1, 100)),
+                title=self.title
+                + " "
+                + rand_item_from_list(ALPHABET)
+                + str(get_rand(1, 100)),
                 pos_x=pos.x,
-                pos_y=pos.y
+                pos_y=pos.y,
             )
             planet_list.append(p)
         return planet_list
@@ -102,15 +136,16 @@ class Game(models.Model):
         p = Player.objects.create(
             user=user,
             username=user.username,
-            game = self,
+            game=self,
             bio=user.username + "'s bio",
             pos_x=home_planet.pos_x,
-            pos_y=home_planet.pos_y
+            pos_y=home_planet.pos_y,
         )
         return p
 
+
 class Player(models.Model):
-    username = models.CharField(max_length=50, default='player')
+    username = models.CharField(max_length=50, default="player")
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     bio = models.CharField(max_length=300, default="enter bio here")
@@ -128,17 +163,16 @@ class Player(models.Model):
         return self.user.id
 
     def get_distance(self, obj):
-        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+        if hasattr(obj, "pos_x") and hasattr(obj, "pos_y"):
             return math.sqrt(
-                (obj.pos_x - self.pos_x)**2 +
-                (obj.pos_y - self.pos_y)**2
+                (obj.pos_x - self.pos_x) ** 2 + (obj.pos_y - self.pos_y) ** 2
             )
         else:
             return -1
 
     def get_direction(self):
         return self.direction
-    
+
     def set_direction(self, d):
         while d < 0:
             d += 360
@@ -149,7 +183,7 @@ class Player(models.Model):
     def set_position(self, x, y):
         self.pos_x = x
         self.pos_y = y
-    
+
     def get_position(self):
         return [self.pos_x, self.pos_y]
 
@@ -166,7 +200,7 @@ class Player(models.Model):
         if Vehicle.objects.filter(owner=self).count() == 1:
             v = Vehicle.objects.get(owner=self)
             speed = v.speed
-        d = self.direction + 90 # 0' is up, 90 is left...
+        d = self.direction + 90  # 0' is up, 90 is left...
         direction_radients = math.pi * d / 180
         change_x = int(speed * math.cos(direction_radients))
         change_y = int(speed * math.sin(direction_radients))
@@ -177,6 +211,7 @@ class Player(models.Model):
         if self.pos_y > self.game.game_dimentions:
             self.pos_y = self.pos_y % self.game.game_dimentions
         return [change_x, change_y]
+
 
 class Weapon(models.Model):
     title = models.CharField(max_length=50)
@@ -238,13 +273,13 @@ class Vehicle(models.Model):
         return self.title
 
     def get_distance(self, obj):
-        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+        if hasattr(obj, "pos_x") and hasattr(obj, "pos_y"):
             return math.sqrt(
-                (obj.pos_x - self.pos_x)**2 +
-                (obj.pos_y - self.pos_y)**2
+                (obj.pos_x - self.pos_x) ** 2 + (obj.pos_y - self.pos_y) ** 2
             )
         else:
             return -1
+
 
 class VehicleBlueprint(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -287,11 +322,9 @@ class Planet(models.Model):
         self.pos_y = y
 
     def get_distance(self, obj):
-        if hasattr(obj, 'pos_x') and hasattr(obj, 'pos_y'):
+        if hasattr(obj, "pos_x") and hasattr(obj, "pos_y"):
             return math.sqrt(
-                (obj.pos_x - self.pos_x)**2 +
-                (obj.pos_y - self.pos_y)**2
+                (obj.pos_x - self.pos_x) ** 2 + (obj.pos_y - self.pos_y) ** 2
             )
         else:
             return -1
-

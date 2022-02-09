@@ -6,7 +6,6 @@ from django.contrib.auth.models import AnonymousUser, User
 from gameapp.models import (
     Game,
     Planet,
-    PlanetBlueprint,
     Player,
     Weapon,
     WeaponBlueprint,
@@ -24,7 +23,8 @@ main_choice_list = {
     'D': 'Delete/redo models associated with the shell ui',
     'A': 'Save player data',
     'L': 'List where planets are',
-    'F': 'Set position of player'
+    'F': 'Set position of player',
+    'Z': 'delete and redo setup'
 }
 
 def get_input(choice_list):
@@ -45,7 +45,7 @@ def get_input_int(phrase):
     except:
         return get_input_int(phrase)
 
-def pre_setup():
+def pre_setup(min_dist_betw_planets=100):
     if User.objects.filter(username = 'shell_user').count() == 0:
         u = User.objects.create(username = 'shell_user')
         u.save()
@@ -53,7 +53,10 @@ def pre_setup():
         u = User.objects.get(username = 'shell_user')
 
     if Game.objects.filter(title='shell_game').count() == 0:
-        g = Game.objects.create(title='shell_game', owner=u, game_dimentions = MIN_DISTANCE_BETWEEN_PLANETS * 100)
+        g = Game.objects.create(
+            title='shell_game',
+            owner=u,
+            game_dimentions = min_dist_betw_planets* 10)
         g.save()
         pb = PlanetBlueprint.objects.create(
             game = g,
@@ -71,6 +74,10 @@ def pre_setup():
     else:
         p = Player.objects.get(username='shell_player')
     return p
+
+def delete_game():
+    u = User.objects.get(username = 'shell_user')
+    u.delete()
 
 def run_game():
 
@@ -106,6 +113,10 @@ def run_game():
             x = get_input_int("enter the x coord of player")
             y = get_input_int("enter the y coord of player")
             p.set_position(x, y)
+        if val == 'Z':
+            delete_game()
+            p = pre_setup()
+            print("redo!")
         print()
         val = get_input(main_choice_list)
 

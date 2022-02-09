@@ -7,8 +7,10 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from scipy.stats import binom
+from collections import namedtuple
 import math
 
+Point = namedtuple("Point", "x y")
 
 DEFAULT_SPEED = 10
 ALPHABET = [
@@ -28,20 +30,58 @@ def get_rand(min_value, max_value):
 
 
 def rand_item_from_list(l):
+    if len(l) == 0:
+        return None
     return l[get_rand(0, len(l) - 1)]
 
 
 class Game(models.Model):
     title = models.CharField(max_length=50)
-    game_dimentions = models.IntegerField(default=10000 * 10)
+    game_dimentions = models.IntegerField(default=10 * 10)
     description = models.CharField(max_length=300)
     last_used = models.DateField(auto_now=True)
     created_date = models.DateField(auto_now_add=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    min_distance_between_planets = models.IntegerField(default=10000)
+    min_distance_between_planets = models.IntegerField(default=10)
 
     def __str__(self):
         return self.title
+
+    def get_valid_locations(self):
+        gd = self.game_dimentions
+        dim = gd - (gd % self.min_distance_between_planets)
+        available_list = list()
+        p_list = Planet.objects.filter(game=self)
+        for x in range(self.min_distance_between_planets, dim, self.min_distance_between_planets):
+            for y in range(self.min_distance_between_planets, dim, self.min_distance_between_planets):
+                if p_list.filter(pos_x=x).filter(pos_y=y).count() == 0:
+                    available_list.append(Point(x, y))
+        return available_list
+
+    def get_valid_random_location(self, n):
+        l = self.get_valid_locations()
+        random_list = list()
+        for i in range(n):
+            rand_point = rand_item_from_list(l)
+            random_list.append(rand_point)
+            if rand_point != None:
+                l.remove(rand_point)
+        return random_list
+
+    def generate_planet(self, n=1):
+        planet_list = list()
+        location_list = self.get_valid_random_location(n)
+        for pos in location_list:
+            if pos == None:
+                pos = Point(-1, -1)
+            p = Planet.objects.create(
+                game=self,
+                title=self.title + " " + rand_item_from_list(ALPHABET) + str(get_rand(1, 100)),
+                pos_x=pos.x,
+                pos_y=pos.y
+            )
+            planet_list.append(p)
+        return planet_list
 
     def configure_game(self):
         if self.game_dimentions % 10 != 0:
@@ -254,45 +294,4 @@ class Planet(models.Model):
             )
         else:
             return -1
-
-class PlanetBlueprint(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.title + "(planet blueprint)"
-
-    def get_valid_locations(self):
-        gd = self.game.game_dimentions
-        dim = gd - (gd % self.game.min_distance_between_planets)
-        available_x = list()
-        available_y = list()
-        p_list = Planet.objects.filter(game=self.game)
-        for i in range(self.game.min_distance_between_planets, dim, MIN_DISTANCE_BETWEEN_PLANETS):
-            if p_list.filter(pos_x=i).count() == 0:
-                available_x.append(i)
-            if p_list.filter(pos_y=i).count() == 0:
-                available_y.append(i)
-        return [available_x, available_y]
-
-    def get_valid_random_location(self):
-        l = self.get_valid_locations()
-        if len(l[0]) == 0 or len(l[1]) == 0:
-            return False
-        else:
-            rand_x = rand_item_from_list(l[0])
-            rand_y = rand_item_from_list(l[1])
-            return [rand_x, rand_y]
-
-    def generate_planet(self):
-        pos = self.get_valid_random_location()
-        if pos == False:
-            pos = [-1, -1]
-        p = Planet.objects.create(
-            game=self.game,
-            title=self.title + " " + rand_item_from_list(ALPHABET) + str(get_rand(1, 100)),
-            pos_x=pos[0],
-            pos_y=pos[1]
-        )
-        return p
 

@@ -13,7 +13,6 @@ from django.contrib.auth.models import AnonymousUser, User
 from .models import (
     Game,
     Planet,
-    PlanetBlueprint,
     Player,
     Weapon,
     WeaponBlueprint,
@@ -21,10 +20,12 @@ from .models import (
     rand_item_from_list,
     VehicleBlueprint,
     Vehicle,
+    Point
 )
 
 # from .views import data_to_json, run_jobs
 
+MIN_DISTANCE_BETWEEN_PLANETS = 10
 
 class GetRandTestCase(TestCase):
     def setUp(self):
@@ -66,9 +67,13 @@ class GameTestCase(TestCase):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
             title="testgame", game_dimentions=4, description="test!",
-            owner=test_user,
+            owner=test_user, min_distance_between_planets=MIN_DISTANCE_BETWEEN_PLANETS
         )
         g.save()
+        planet_list = g.generate_planet(7)
+        for p in range(len(planet_list)):
+            planet_list[p].title = f'planet #{p}'
+            planet_list[p].save()
 
     def test_sanity(self):
         g = Game.objects.get(title="testgame")
@@ -85,78 +90,32 @@ class GameTestCase(TestCase):
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
-
-class PlanetBlueprintTestCase(TestCase):
-    def setUp(self):
-        test_user = User.objects.create_user(username="testuser", password="1234")
-        g = Game.objects.create(
-            title="testgame", game_dimentions=g.min_distance_between_planets * 10, description="test!",
-            owner=test_user,
-        )
-        g.save()
-        p = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
-        p.save()
-
-    def test_sanity(self):
-        p = PlanetBlueprint.objects.get(title="testplanetbp")
-        expected = "testplanetbp"
-        val = p.title
+    def test_game_dimention_configure(self):
+        g = Game.objects.get(title="testgame")
+        g.configure_game()
+        expected = MIN_DISTANCE_BETWEEN_PLANETS * 10
+        val = g.game_dimentions
         errmsg = "expected " + str(expected) + " but got " + str(val)
-        self.assertEqual(val, expected, errmsg)
-
-    def test_generate(self):
-        p = PlanetBlueprint.objects.get(title="testplanetbp")
-        new_planet = p.generate_planet()
-        new_planet.save()
-        expected = "testplanetbp"
-        val = new_planet.title[:12]
-        errmsg = "expected " + str(expected) + " but got " + str(val)
-        self.assertEqual(val, expected, errmsg)
-
-    def test_valid_locations(self):
-        p = PlanetBlueprint.objects.get(title="testplanetbp")
-        new_planet = p.generate_planet()
-        new_planet.pos_x = 3 * g.min_distance_between_planets
-        new_planet.pos_y = 9 * g.min_distance_between_planets
-        new_planet.save()
-        available_list = p.get_valid_locations()
-        x_list = available_list[0]
-        y_list = available_list[1]
-        x_list.sort()
-        y_list.sort()
-        my_list = [1, 2, 4, 5, 6, 7, 8, 9]
-        expected_x = list()
-        for i in my_list:
-            expected_x.append(i * g.min_distance_between_planets)
-        errmsg_x = "x_list should have " + str(expected_x) + " but got " + str(x_list)
-        self.assertEqual(x_list, expected_x, errmsg_x)
-        my_list = [1, 2, 3, 4, 5, 6, 7, 8]
-        expected_y = list()
-        for i in my_list:
-            expected_y.append(i * g.min_distance_between_planets)
-        errmsg_y = "y_list should have " + str(expected_y) + " but got " + str(y_list)
-        self.assertEqual(y_list, expected_y, errmsg_y)
-
+        self.assertEqual(val, expected, errmsg)  
 
 class PlanetTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=g.min_distance_between_planets * 100, description="test!",
-            owner=test_user,
+            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 10, description="test!",
+            owner=test_user, min_distance_between_planets = MIN_DISTANCE_BETWEEN_PLANETS
         )
         g.save()
-        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
-        pb.save()
-        p1 = pb.generate_planet()
+        planet_list = g.generate_planet(2)
+        p1 = planet_list[0]
         p1.title = "testplanet1"
-        p1.pos_x = 100
-        p1.pos_y = 100
+        p1.pos_x = 10
+        p1.pos_y = 10
         p1.save()
-        p2 = pb.generate_planet()
+        p2 = planet_list[1]
         p2.title = "testplanet2"
-        p2.pos_x = 500
-        p2.pos_y = 400
+        p2.pos_x = 50
+        p2.pos_y = 40
         p2.save()
 
     def test_sanity(self):
@@ -170,11 +129,11 @@ class PlanetTestCase(TestCase):
         p1 = Planet.objects.get(title="testplanet1")
         p2 = Planet.objects.get(title="testplanet2")
         val = p1.get_distance(p2)
-        expected = 500
+        expected = 50
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
         val = p2.get_distance(p1)
-        expected = 500
+        expected = 50
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
 
@@ -182,21 +141,19 @@ class PlayerTestCase(TestCase):
     def setUp(self):
         test_user = User.objects.create_user(username="testuser", password="1234")
         g = Game.objects.create(
-            title="testgame", game_dimentions=4, description="test!",
-            owner=test_user,
+            title="testgame", game_dimentions=MIN_DISTANCE_BETWEEN_PLANETS * 20, description="test!",
+            owner=test_user, min_distance_between_planets = MIN_DISTANCE_BETWEEN_PLANETS
         )
         g.configure_game()
         g.save()
-        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
-        pb.save()
-        for p in range(6):
-            pl = pb.generate_planet()
-            pl.title = 'planet #' + str(p)
-            pl.save()
+        planet_list = g.generate_planet(3)
+        for p in range(len(planet_list)):
+            planet_list[p].title = f'planet #{p}'
+            planet_list[p].save()
 
     def test_sanity_check(self):
-        p = Planet.objects.get(title="planet #4")
-        expected = "planet #4"
+        p = Planet.objects.get(title="planet #1")
+        expected = "planet #1"
         val = p.title
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -214,11 +171,9 @@ class PlayerTestCase(TestCase):
     def test_player_location(self):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
-        for i in Planet.objects.filter(game=g):
-            i.delete()
-        pb = PlanetBlueprint.objects.create(game=g, title="testplanetbp")
-        pb.save()
-        planet = pb.generate_planet()
+        for p in Planet.objects.filter(game=g)[1:]:
+            p.delete()
+        planet = Planet.objects.filter(game=g)[0]
         player = g.create_player(u)
         self.assertNotEquals(player, False, "there is an issue with creating a player")
         player.save()
@@ -271,16 +226,16 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position(MIN_DISTANCE_BETWEEN_PLANETS / 2, MIN_DISTANCE_BETWEEN_PLANETS / 2)
         p.save()
         p.set_direction(0)
         p.move()
         pos = p.get_position()
-        expected = 1000 + 0
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 0
         val = pos[0]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-        expected = 1000 + 10
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 10
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -289,16 +244,16 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position(MIN_DISTANCE_BETWEEN_PLANETS / 2, MIN_DISTANCE_BETWEEN_PLANETS / 2)
         p.save()
         p.set_direction(90)
         p.move()
         pos = p.get_position()
-        expected = 1000 - 10
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) - 10
         val = pos[0]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-        expected = 1000 + 0
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 0
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -307,16 +262,16 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position((MIN_DISTANCE_BETWEEN_PLANETS / 2), (MIN_DISTANCE_BETWEEN_PLANETS / 2))
         p.save()
         p.set_direction(180)
         p.move()
         pos = p.get_position()
-        expected = 1000 + 0
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 0
         val = pos[0]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-        expected = 1000 + -10
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + -10
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -325,16 +280,16 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position((MIN_DISTANCE_BETWEEN_PLANETS / 2), (MIN_DISTANCE_BETWEEN_PLANETS / 2))
         p.save()
         p.set_direction(270)
         p.move()
         pos = p.get_position()
-        expected = 1000 + 10
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 10
         val = pos[0]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-        expected = 1000 + 0
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 0
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -343,16 +298,16 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position((MIN_DISTANCE_BETWEEN_PLANETS / 2), (MIN_DISTANCE_BETWEEN_PLANETS / 2))
         p.save()
         p.set_direction(30)
         p.move()
         pos = p.get_position()
-        expected_left = 1000 - 4
+        expected_left = (MIN_DISTANCE_BETWEEN_PLANETS / 2) - 4
         val = pos[0]
         errmsg = "expected " + str(expected_left) + " but got " + str(val)
         self.assertEqual(val, expected_left, errmsg)
-        expected = 1000 + 8
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 8
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
@@ -361,61 +316,57 @@ class PlayerTestCase(TestCase):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         p = g.create_player(u)
-        p.set_position(1000, 1000)
+        p.set_position((MIN_DISTANCE_BETWEEN_PLANETS / 2), (MIN_DISTANCE_BETWEEN_PLANETS / 2))
         p.save()
         p.set_direction(360 - 15)
         p.move()
         pos = p.get_position()
-        expected_left = 1000 + 2
+        expected_left = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 2
         val = pos[0]
         errmsg = "expected " + str(expected_left) + " but got " + str(val)
         self.assertEqual(val, expected_left, errmsg)
-        expected = 1000 + 9
+        expected = (MIN_DISTANCE_BETWEEN_PLANETS / 2) + 9
         val = pos[1]
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-
-
 
     def test_n_closest_planets(self):
         g = Game.objects.get(title="testgame")
         u = User.objects.get(username='testuser')
         player = g.create_player(u)
-        pb = PlanetBlueprint.objects.get(title="testplanetbp")
-        mindist = g.min_distance_between_planets
+        mindist = MIN_DISTANCE_BETWEEN_PLANETS / 2
         player.set_position(mindist, mindist)
         player.save()
-        for i in Planet.objects.filter(game = g):
-            i.delete()
-        for i in range(mindist * 2, mindist * 6, mindist):
-            name = 'A' + str(int((i - mindist) / mindist))
-            planet = pb.generate_planet()
-            planet.title = name
-            planet.set_position(mindist, i)
-            planet.save()
-        for i in range(mindist * 2, mindist * 6, mindist):
-            name = 'B' + str(int((i - mindist) / mindist))
-            planet = pb.generate_planet()
-            planet.title = name
-            planet.set_position(i, mindist)
-            planet.save()
-        for i in range(mindist * 2, mindist * 6, mindist):
-            name = 'C' + str(int((i - mindist) / mindist))
-            planet = pb.generate_planet()
-            planet.title = name
-            planet.set_position(i, i)
-            planet.save()
-        planet_list = player.get_closest_planets(3)
+        # beforeList = list()
+        # for p in Planet.objects.filter(game=g):
+        #     beforeList.append(p.title)
+        # for i in Planet.objects.filter(game=g):
+        #     if i.title not in ["planet #0", "planet #1", "planet #2"]:
+        #         i.delete()
+        # afterList = list()
+        # for p in Planet.objects.filter(game=g):
+        #     afterList.append(p.title)
+        # self.assertEqual(beforeList, afterList)
+        iterator = 0
+        distance_between = mindist
+        for i in Planet.objects.filter(game=g):
+            iterator += 1
+            i.title = f"p{iterator}"
+            i.pos_x = mindist
+            i.pos_y = mindist
+            i.save()
+            distance_between += mindist
+
         name_list = list()
+        planet_list = player.get_closest_planets(5)
         for p in planet_list:
             planet = Planet.objects.get(id=p)
             name_list.append(planet.title)
         name_list.sort()
-        expected = ['A1', 'A2', 'B1', 'B2', 'C1']
+        expected = ['p1', 'p2', 'p3']
         val = name_list
         errmsg = "expected " + str(expected) + " but got " + str(val)
         self.assertEqual(val, expected, errmsg)
-        
 
 # class RemoteGoogleTestCase(unittest.TestCase):
 #     #check if selenium is working

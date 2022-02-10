@@ -107,9 +107,9 @@ class Game(models.Model):
                 pos = Point(-1, -1)
             p = Planet.objects.create(
                 game=self,
-                title=self.title
-                + " "
+                title="planet "
                 + rand_item_from_list(ALPHABET)
+                + "-"
                 + str(get_rand(1, 100)),
                 pos_x=pos.x,
                 pos_y=pos.y,
@@ -120,7 +120,7 @@ class Game(models.Model):
     def configure_game(self):
         if self.game_dimentions % 10 != 0:
             self.game_dimentions - (self.game_dimentions % 10)
-        if self.game_dimentions <= self.min_distance_between_planets * 10:
+        if self.game_dimentions < self.min_distance_between_planets * 10:
             self.game_dimentions = self.min_distance_between_planets * 10
 
     def get_random_planet(self):
@@ -147,7 +147,7 @@ class Game(models.Model):
 class Player(models.Model):
     username = models.CharField(max_length=50, default="player")
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, models.SET_NULL, blank=True, null=True)
     bio = models.CharField(max_length=300, default="enter bio here")
     last_login_date = models.DateField(auto_now=True)
     is_mod = models.BooleanField(default=False)

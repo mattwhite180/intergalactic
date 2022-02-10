@@ -52,18 +52,17 @@ def pre_setup(min_dist_betw_planets=100):
 
     if Game.objects.filter(title="shell_game").count() == 0:
         g = Game.objects.create(
-            title="shell_game", owner=u, game_dimentions=min_dist_betw_planets * 10
+            title="shell_game", owner=u, game_dimentions=min_dist_betw_planets * 10, min_distance_between_planets = min_dist_betw_planets
         )
+        g.configure_game()
         g.save()
-        pb = PlanetBlueprint.objects.create(game=g, title="planet")
-        pb.save()
-        for i in range(10):
-            planet = pb.generate_planet()
+        planets = g.generate_planet(10)
+        for planet in planets:
             planet.save()
     else:
         g = Game.objects.get(title="shell_game")
     if Player.objects.filter(username="shell_player").count() == 0:
-        p = Player.objects.create(username="shell_player", user=u, game=g)
+        p = g.create_player(u)
         p.save()
     else:
         p = Player.objects.get(username="shell_player")
